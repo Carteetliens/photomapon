@@ -1,0 +1,13 @@
+annotations:
+  porte:
+    fonction_objet: ["entrée", "garage"]
+    mode_annotation: ["cartographie"]
+  toiture:
+    fonction_objet: ["ardoise", "tuile"]
+    mode_annotation: ["maj_objet"]
+  fenetre:
+    fonction_objet: ["vitré", "grille"]
+    mode_annotation: ["cartographie"]
+  epoque:
+    fonction_objet: ["17e", "contemporaine", "autre"]
+    mode_annotation: ["maj_objet"]
