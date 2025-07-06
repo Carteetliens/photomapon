@@ -1,0 +1,949 @@
+
+<!doctype html>
+<html lang="fr" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation du projet d’annotations de photos et de cartographie automatisée">
+      
+      
+        <meta name="author" content="Joseph Jacquet">
+      
+      
+        <link rel="canonical" href="https://carteetliens.github.io/utilisation/">
+      
+      
+        <link rel="prev" href="../installation/">
+      
+      
+        <link rel="next" href="../config/">
+      
+      
+      <link rel="icon" href="../images/favicon.ico">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
+    
+    
+      
+        <title>Principe de base - PhotoMapon – Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.342714a4.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Barlow:300,300i,400,400i,700,700i%7CBarlow:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Barlow";--md-code-font:"Barlow"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="yellow">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#1-prerequis-avant-lutilisation-de-lapplication" class="md-skip">
+          Aller au contenu
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="En-tête">
+    <a href=".." title="PhotoMapon – Documentation" class="md-header__button md-logo" aria-label="PhotoMapon – Documentation" data-md-component="logo">
+      
+  <img src="../images/LogophotomaponHorizontal.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            PhotoMapon – Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Principe de base
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Rechercher" placeholder="Rechercher" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Recherche">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Effacer" aria-label="Effacer" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initialisation de la recherche
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/carteetliens/photomapon" title="Aller au dépôt" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    carteetliens/photomapon
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="PhotoMapon – Documentation" class="md-nav__button md-logo" aria-label="PhotoMapon – Documentation" data-md-component="logo">
+      
+  <img src="../images/LogophotomaponHorizontal.svg" alt="logo">
+
+    </a>
+    PhotoMapon – Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/carteetliens/photomapon" title="Aller au dépôt" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    carteetliens/photomapon
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Accueil
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Installation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Utilisation
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Utilisation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Principe de base
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Principe de base
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table des matières">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table des matières
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-prerequis-avant-lutilisation-de-lapplication" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Prérequis avant l'utilisation de l'application
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Prérequis avant l&#39;utilisation de l&#39;application">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#disposer-du-chemin-vers-un-dossier-photo-et-connaitre-le-fov-de-limage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Disposer du chemin vers un dossier photo et connaître le FOV de l'image
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fournir-un-fichier-yaml-de-configuration-annotations_configyaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fournir un fichier YAML de configuration (annotations_config.yaml)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-utilisation-de-lapplication" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Utilisation de l'application
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Utilisation de l&#39;application">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#demarrer-lapplication" class="md-nav__link">
+    <span class="md-ellipsis">
+      Démarrer l’application
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ajouter-des-annotations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Ajouter des annotations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gerer-les-annotations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Gérer les annotations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generez-vos-donnees-finales" class="md-nav__link">
+    <span class="md-ellipsis">
+      Générez vos données finales
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Paramétrages supplémentaires
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../credits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Crédits
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../licence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Licence
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table des matières">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table des matières
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-prerequis-avant-lutilisation-de-lapplication" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Prérequis avant l'utilisation de l'application
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Prérequis avant l&#39;utilisation de l&#39;application">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#disposer-du-chemin-vers-un-dossier-photo-et-connaitre-le-fov-de-limage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Disposer du chemin vers un dossier photo et connaître le FOV de l'image
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fournir-un-fichier-yaml-de-configuration-annotations_configyaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fournir un fichier YAML de configuration (annotations_config.yaml)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-utilisation-de-lapplication" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Utilisation de l'application
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Utilisation de l&#39;application">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#demarrer-lapplication" class="md-nav__link">
+    <span class="md-ellipsis">
+      Démarrer l’application
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ajouter-des-annotations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Ajouter des annotations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gerer-les-annotations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Gérer les annotations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generez-vos-donnees-finales" class="md-nav__link">
+    <span class="md-ellipsis">
+      Générez vos données finales
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+  <h1>Principe de base</h1>
+
+<h2 id="1-prerequis-avant-lutilisation-de-lapplication"><strong>1. Prérequis avant l'utilisation de l'application</strong><a class="headerlink" href="#1-prerequis-avant-lutilisation-de-lapplication" title="Permanent link">&para;</a></h2>
+<h3 id="disposer-du-chemin-vers-un-dossier-photo-et-connaitre-le-fov-de-limage"><strong><em>Disposer du chemin vers un dossier photo et connaître le FOV de l'image</em></strong><a class="headerlink" href="#disposer-du-chemin-vers-un-dossier-photo-et-connaitre-le-fov-de-limage" title="Permanent link">&para;</a></h3>
+<hr />
+<p>Les photos doivent contenir des données EXIF exploitables et précises pour garantir un rendu fiable (précision minimum conseillée : &lt; 1 m pour les coordonnées + direction).</p>
+<p>Il est nécessaire de connaître la valeur du FOV (champ de vision) de l’appareil photo.
+Cette valeur est à renseigner dans la barre latérale de l’interface.    </p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p><em>Figer le chemin et le FOV dans main.py si fréquemment utilisé</em><br />
+<em>Voir la page <a href="../config/">Paramétrages supplémentaires</a></em>  </p>
+</div>
+<h3 id="fournir-un-fichier-yaml-de-configuration-annotations_configyaml"><strong><em>Fournir un fichier YAML de configuration (annotations_config.yaml)</em></strong><a class="headerlink" href="#fournir-un-fichier-yaml-de-configuration-annotations_configyaml" title="Permanent link">&para;</a></h3>
+<hr />
+<p>Il doit prendre le nom "annotations_config.yaml" et doit être placé dans le même dossier que vos photos.<br />
+Un exemple prêt à l’emploi est fourni dans le dossier /data_test.</p>
+<p>📄 <em>Structure attendue</em> :</p>
+<div class="highlight"><pre><span></span><code>annotations:
+<span class="w">  </span>type_objet1:
+<span class="w">    </span>fonction_objet:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;fonction1&quot;</span>,<span class="w"> </span><span class="s2">&quot;fonction2&quot;</span><span class="o">]</span>
+<span class="w">    </span>mode_annotation:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;mode1&quot;</span><span class="o">]</span>
+<span class="w">  </span>type_objet2:
+<span class="w">    </span>fonction_objet:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;fonction1&quot;</span>,<span class="w"> </span><span class="s2">&quot;fonction2&quot;</span><span class="o">]</span>
+<span class="w">    </span>mode_annotation:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;mode1&quot;</span><span class="o">]</span>
+<span class="w">  </span>type_objet3:
+<span class="w">    </span>fonction_objet:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;fonction1&quot;</span>,<span class="w"> </span><span class="s2">&quot;fonction2&quot;</span><span class="o">]</span>
+<span class="w">    </span>mode_annotation:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;mode2&quot;</span><span class="o">]</span>
+</code></pre></div>
+<p>🔎 <em>Explication des champs</em> :</p>
+<table>
+<thead>
+<tr>
+<th><strong>Champs</strong></th>
+<th><strong>Sous-Champs</strong></th>
+<th><strong>Description</strong></th>
+<th><strong>Exemple</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>[mode_annotation]</code></td>
+<td><code>cartographie</code></td>
+<td>Création de point lié <br>à une table du GPKG <br>(ex : porte liée à un bâtiment)</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>[mode_annotation]</code></td>
+<td><code>maj_objet</code></td>
+<td>Mise à jour attributaire d’une <br>géométrie existante<br> (colonne = type_objet,<br>valeur = fonction_objet)</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>[type_objet]</code></td>
+<td>-</td>
+<td>Type explicite de l’objet annoté</td>
+<td><code>"porte"</code>, <code>"toiture"</code>, etc.</td>
+</tr>
+<tr>
+<td><code>[fonction_objet]</code></td>
+<td>-</td>
+<td>Valeur de précision liée à l’objet</td>
+<td><code>"entrée"</code>, <code>"garage"</code>, etc.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>Vous pouvez modifier le contenu du YAML pendant une session.<br />
+Vous devrez recharger le fichier via le bouton dans la barre latérale  </p>
+<p><img alt="Bouton pour recharger le YAML" src="../images/bouton_recharg_yaml.jpg" width="300px" /></p>
+</div>
+<h2 id="2-utilisation-de-lapplication"><strong>2. Utilisation de l'application</strong><a class="headerlink" href="#2-utilisation-de-lapplication" title="Permanent link">&para;</a></h2>
+<h3 id="demarrer-lapplication"><strong><em>Démarrer l’application</em></strong><a class="headerlink" href="#demarrer-lapplication" title="Permanent link">&para;</a></h3>
+<hr />
+<p>Copier le chemin du dossier contenant les images dans le champ prévu et définissez la valeur du FOV de vos images.  </p>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;"><em>Chemin des photos</em></th>
+<th style="text-align: center;"><em>Valeur du FOV</em></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><img alt="Chemin vers les photos" src="../images/barre_chemin_photo.jpg" width="400px" /></td>
+<td style="text-align: center;"><img alt="Choix du FOV" src="../images/outil_fov_photo.jpg" width="300px" /></td>
+</tr>
+</tbody>
+</table>
+<p>L’application va automatiquement :</p>
+<ul>
+<li>générer un fichier exif_data.json (métadonnées des images),</li>
+<li>créer un fichier annotations.json à la première annotation.</li>
+</ul>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p><em>Ces fichiers se trouvent dans le dossier photo et doivent y rester pour être exploités par l'application.</em> <br />
+Si vous modifiez le contenu du dossier photo, vous devez recalculer les exifs notamment dans le cas d'un ajout.  </p>
+<p><img alt="Bouton pour recalculer les EXIF" src="../images/bouton_recalc_exif.jpg" width="300px" /></p>
+</div>
+<p><em><strong>Gestion automatique des bandes noires</strong></em></p>
+<p>Le FOV exploitable de la photo est fixé à 70°.  </p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><em>Exemple</em> :<br />
+Si votre image a un FOV de 100° (défini dans la barre latérale), l’application rogne automatiquement les 15° de chaque côté pour ne conserver que la zone au centre d'un FOV de 70°. Vous pouvez ajouter des annotations dans cette zone mais elles seront exclues du traitement final.</p>
+</div>
+<h3 id="ajouter-des-annotations"><strong><em>Ajouter des annotations</em></strong><a class="headerlink" href="#ajouter-des-annotations" title="Permanent link">&para;</a></h3>
+<hr />
+<p>Dans la barre latérale, sélectionnez :</p>
+<ul>
+<li>le mode (cartographie ou maj_objet)</li>
+<li>le type d’objet</li>
+<li>sa fonction  </li>
+</ul>
+<p><img alt="Liste déroulante des annotations" src="../images/listes_deroulantes_annotation.jpg" width="250px" /> </p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Les listes sont automatiquement filtrées selon le fichier annotations_config.yaml :<br />
+- par cible<br />
+- par type_objet</p>
+</div>
+<p><strong>Cliquez sur l’image à l’endroit souhaité.</strong><br />
+<img alt="Annotation sur la photo" src="../images/interface_annot.jpg" width="500px" /> </p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p><em>Les annotations sont sauvegardées automatiquement dans le json à chaque clic</em><br />
+<em>Les objets en doublons (un même objets sur deux images) sont moyennés pour ne garder qu'un seul élément lors du traitement final</em><br />
+<em>Il se peut que les doublons entre deux images soient maintenus en fonction de leur distance (tri attributaire et spatial)</em>   </p>
+</div>
+<h3 id="gerer-les-annotations"><strong><em>Gérer les annotations</em></strong><a class="headerlink" href="#gerer-les-annotations" title="Permanent link">&para;</a></h3>
+<hr />
+<p>Vous pouvez :</p>
+<ul>
+<li>sélectionner une annotation pour modifier ses attributs</li>
+<li>supprimer une annotation.  </li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Il n’est pas possible de déplacer une annotation : supprimez-la puis recréez-la au bon endroit.  </p>
+</div>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;"><em>Tableau et sélection d'une annotation</em></th>
+<th style="text-align: center;"><em>Sélection visible à l'écran (en jaune)</em></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><img alt="Tableau des annotations" src="../images/tableau_select_annot.jpg" width="400px" /></td>
+<td style="text-align: center;"><img alt="Sélection visible" src="../images/interface_annot_select.jpg" width="400px" /></td>
+</tr>
+</tbody>
+</table>
+<p>Vous pouvez également supprimer l'ensemble des annotations d'une image via le bouton dans la barre latérale<br />
+<img alt="Bouton pour supprimer les annotations" src="../images/bouton_reset_annot.jpg" width="300px" />  </p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Faites une sauvegarde du json d'annotations avant chaque session<br />
+La réinitialisation des annotations d'une image supprimera l'ensemble des annotations de l'image au clic.<br />
+Les boutons de modification et de suppression ont un effet immédiat lors du clic.  </p>
+</div>
+<h3 id="generez-vos-donnees-finales"><strong><em>Générez vos données finales</em></strong><a class="headerlink" href="#generez-vos-donnees-finales" title="Permanent link">&para;</a></h3>
+<hr />
+<p>Dans la barre latérale :</p>
+<ul>
+<li>ajoutez un fichier GPKG en Lambert-93 (EPSG 2154)</li>
+<li>sélectionnez la table de comparaison (polygone)</li>
+</ul>
+<p><img alt="Bouton pour recharger le YAML" src="../images/ajout_gpkg_select_table.jpg" width="250px" />  </p>
+<p><em>Cliquez sur</em> <strong><em>"🗺️ Cartographier les éléments 🗺️"</em></strong>  </p>
+<p><em>Résultats générés automatiquement et placés dans le dossier "resultat" (créé par défaut si absent)</em> :</p>
+<ul>
+<li>un GPKG enrichi (table de référence mise à jour, autres tables si présentes et création d'une table des objets cartographiés)</li>
+<li>un fichier de log retraçant les opérations</li>
+<li>les photos annotées exportées dans ce même dossier</li>
+</ul>
+<div class="admonition details">
+<p class="admonition-title">Détail des couches du GeoPackage exporté</p>
+<p>Voici un résumé des couches créées dans le fichier GeoPackage lors de l’export des annotations (préfixe phm_).<br />
+L'ensemble des tables du GPKG d'origine sont renvoyées, seule la table fournie est mise à jour par les annotations.  </p>
+<table>
+<thead>
+<tr>
+<th>Nom de la couche</th>
+<th>Description</th>
+<th>Type géométrique</th>
+<th>Source / Rôle  principal</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>nom de la table utilisateur</code></td>
+<td>Géométrie mise à jour par les annotations de l'utilisateur</td>
+<td>Polygone</td>
+<td>Géométrie issue du fichier/table utilisateur pour mise à jour</td>
+</tr>
+<tr>
+<td><code>phm_photo</code></td>
+<td>Un point par photo annotée, contenant les métadonnées EXIF et les annotations associées.</td>
+<td>Point</td>
+<td>Issue des métadonnées EXIF et JSON d’annotation</td>
+</tr>
+<tr>
+<td><code>phm_point_geom</code></td>
+<td>Points géométriques de référence projetés utilisés pour les calculs d'objets.</td>
+<td>Point</td>
+<td>Base de référence pour les traitements spatiaux bruts</td>
+</tr>
+<tr>
+<td><code>phm_point_objet_annot</code></td>
+<td>Tous les objets annotés y compris les doublons, directement issus des clics depuis un "phm_point_geom".</td>
+<td>Point</td>
+<td>Capture brute des objets annotés par l’utilisateur</td>
+</tr>
+<tr>
+<td><code>phm_point_ref</code></td>
+<td>Points de référence pour recalcul des angles des objets</td>
+<td>Point</td>
+<td>Servent à générer les objets finaux avec orientation moyenne par groupe</td>
+</tr>
+<tr>
+<td><code>phm_ligne_vue</code></td>
+<td>Lignes de vue finales depuis les "point_ref" vers les objets annotés finaux.</td>
+<td>Ligne (LineString)</td>
+<td>Visualisation des correspondances entre photos et objets</td>
+</tr>
+<tr>
+<td><code>phm_point_objet</code></td>
+<td>Objets annotés finaux : un seul point par groupe (angle moyen, sans doublons).</td>
+<td>Point</td>
+<td>Résultat consolidé pour la cartographie finale</td>
+</tr>
+</tbody>
+</table>
+<p><em>Vous pouvez désactiver la création de certaines couches pour ne garder que "photo", la couche utilisateur mise à jour (et le reste des couches d'origine) et "point_objet" en commentant les lignes dans le fichier.</em><br />
+<em><strong>utils/geo_utils -&gt; à partir de la ligne 412</strong></em></p>
+</div>
+<hr />
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copi\u00e9 dans le presse-papier", "clipboard.copy": "Copier dans le presse-papier", "search.result.more.one": "1 de plus sur cette page", "search.result.more.other": "# de plus sur cette page", "search.result.none": "Aucun document trouv\u00e9", "search.result.one": "1 document trouv\u00e9", "search.result.other": "# documents trouv\u00e9s", "search.result.placeholder": "Taper pour d\u00e9marrer la recherche", "search.result.term.missing": "Non trouv\u00e9", "select.version": "S\u00e9lectionner la version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.13a4f30d.min.js"></script>
+      
+    
+  </body>
+</html>
