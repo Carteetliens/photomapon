@@ -9,5 +9,5 @@ annotations:
     fonction_objet: ["vitré", "grille"]
     mode_annotation: ["cartographie"]
   epoque:
-    fonction_objet: ["19e","20e","contemporaine", "autre"]
+    fonction_objet: ["17e", "contemporaine", "autre"]
     mode_annotation: ["maj_objet"]

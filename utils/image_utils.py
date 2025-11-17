@@ -1,4 +1,5 @@
 # -----------------------------------------------------------------------------
+# Version 1.1 PhotoMapon
 # Auteur      : Joseph Jacquet | Carte et Liens
 # Contact     : contact@carteetliens.fr | www.carteetliens.fr
 # Licence     : Ce projet est publié sous la licence GNU GPL v3.
@@ -11,6 +12,12 @@ import json
 import cv2
 import numpy as np
 import streamlit as st
+
+# Calcul du ratio de la photo pour définir la visionneuse à utiliser dans l'interface
+def is_360_photo(full_width, full_height):
+    ratio = full_width / full_height
+    return 1.9 <= ratio <= 2.1
+    # Une photo 360° a typiquement un ratio de 2:1 (avec une petite marge d'erreur)
 
 # Catalogue de couleurs pour les annotations
 def couleur_rgba(couleur_nom, alpha=255):

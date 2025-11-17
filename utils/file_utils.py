@@ -1,4 +1,5 @@
 # -----------------------------------------------------------------------------
+# Version 1.1 PhotoMapon
 # Auteur      : Joseph Jacquet | Carte et Liens
 # Contact     : contact@carteetliens.fr | www.carteetliens.fr
 # Licence     : Ce projet est publié sous la licence GNU GPL v3.
@@ -11,6 +12,7 @@ import os
 import shutil
 from datetime import datetime
 import logging
+import streamlit
 
 # Configuration du logger global
 def setup_logger(log_dir):
@@ -50,7 +52,6 @@ def charger_annotations(annotations_file):
             raise ValueError(f"Erreur de lecture JSON : {e}")
     return {}
 
-
 # Chargement du fichier YAML pour les listes deroulantes
 def charger_config_annotations(config_path):
     if not os.path.exists(config_path):
@@ -78,3 +79,29 @@ def sauvegarder_annotations(annotations_file, annotations):
             json.dump(annotations, f, ensure_ascii=False, indent=2)
     except Exception as e:
         raise IOError(f"Erreur lors de la sauvegarde des annotations : {e}")
+
+def get_mapping_yaml_if_exists(nom_fichier="mapping.yaml", dossier=None):
+    """
+    Retourne le chemin du fichier de mapping s’il existe, sinon None.
+    """
+    chemin = os.path.join(dossier, nom_fichier)
+    return chemin if os.path.exists(chemin) else None
+
+def cleanup_temp_files():
+    # Supprimer le modèle YOLO temporaire
+    tmp_model = st.session_state.get("tmp_model_path")
+    if tmp_model and os.path.exists(tmp_model):
+        try:
+            os.remove(tmp_model)
+            print(f"🧹 Modèle temporaire supprimé : {tmp_model}")
+        except Exception as e:
+            print(f"❌ Erreur suppression modèle : {e}")
+
+    # Supprimer le GeoPackage temporaire
+    tmp_gpkg = st.session_state.get("tmp_gpkg_path")
+    if tmp_gpkg and os.path.exists(tmp_gpkg):
+        try:
+            os.remove(tmp_gpkg)
+            print(f"🧹 GeoPackage temporaire supprimé : {tmp_gpkg}")
+        except Exception as e:
+            print(f"❌ Erreur suppression GPKG : {e}")

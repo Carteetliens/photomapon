@@ -1,4 +1,5 @@
 # -----------------------------------------------------------------------------
+# Version 1.1 PhotoMapon
 # Auteur      : Joseph Jacquet | Carte et Liens
 # Contact     : contact@carteetliens.fr | www.carteetliens.fr
 # Licence     : Ce projet est publié sous la licence GNU GPL v3.
@@ -10,21 +11,63 @@
 import os
 from datetime import datetime
 import streamlit as st
-from utils.file_utils import charger_config_annotations, creer_backup_annotations, sauvegarder_annotations, charger_annotations 
+from streamlit_image_coordinates import streamlit_image_coordinates
+import json
+import fiona
+from utils.file_utils import charger_config_annotations, get_mapping_yaml_if_exists, sauvegarder_annotations, charger_annotations 
 from utils.geo_utils import creer_gpkg_complet, prepare_temp_gpkg
 from utils.exif_utils import charger_exif_depuis_json, extraire_et_sauvegarder_exif 
-from utils.image_utils import dessiner_annotations_sur_images, lister_images, redimens_image, dessiner_overlay, redresser_image_hero9_cached
-from utils.annotation_utils import ajouter_annotation, modifier_annotation, supprimer_annotation, reinitialiser_annotations_image, calculer_angle_porte, creer_dataframe_annotations
+from utils.image_utils import dessiner_annotations_sur_images, lister_images, redimens_image, dessiner_overlay, redresser_image_hero9_cached, is_360_photo
+from utils.annotation_utils import ajouter_annotation, modifier_annotation, supprimer_annotation, reinitialiser_annotations_image, pannellum_to_metier, prepare_hotspots_for_pannellum, creer_dataframe_annotations_360,  calculer_angle_objet, calculer_fov_vertical,calculer_angle_elevation, creer_dataframe_annotations
 from PIL import Image
-from streamlit_image_coordinates import streamlit_image_coordinates
-import fiona
-
+from visu360.visu360 import pannellum_viewer
 
 def safe_index(options, value):
     try:
         return options.index(value)
     except ValueError:
         return 0
+
+# Streamlit — Photomapon INTERFACE (main.py)
+
+# Responsabilités :
+# - Chargement d'un dossier d'images et des métadonnées EXIF (exif_data.json)
+# - Interface d'annotation (photos 360° via Pannellum et photos standards via streamlit_image_coordinate)
+# - Sauvegarde des annotations dans un fichier JSON (annotations.json)
+# - Export cartographique vers un GPKG
+
+# Formats clés :
+# - annotations.json : { "<image_name>": [ { "uuid": str, "x": int, "y": int, "yaw": float, "pitch": float,
+#    "type_objet": str, "fonction_objet": str, "mode_annotation": str, "date": ISO8601, ... }, ... ], ... }
+# - exif_data.json : mapping image_name -> { "lat": float, "lon": float, "direction": float, "format": str, "date_time": str }
+
+# Attention :
+# - st.session_state est utilisé pour stocker l'état UI et commandes JS (cmd_action/cmd_data).
+# - Voir le bloc "SESSION_STATE KEYS" ci‑dessous pour la sémantique de chaque clé.
+
+
+# SESSION_STATE KEYS (documentation rapide)
+# - selected_annotation: str|None -> UUID de l'annotation sélectionnée dans l'UI (tableau / Pannellum).
+# - last_click: tuple[int,int]|None -> Coordonnées du dernier clic traité (empêche doublons).
+# - cmd_action: str|None -> Commande envoyée au viewer 360 (ex: "update", "delete", "clear_all").
+# - cmd_data: dict|None -> Données associées à cmd_action (ex: {"uuid": "...", "yaw":..., "pitch":..., "hfov":...}).
+# - selected_uuid: str|None -> Clé historique / potentiellement redondante avec selected_annotation.
+# - last_image_folder: str|None -> Dossier chargé précédemment (servir à détecter changement de dossier).
+# - annotations: dict -> Mapping image_name -> list[annotation dict] (in memory, sauvegardé dans annotations.json).
+# - current_image_index: int -> Index de l'image affichée.
+# - fov_input: float -> Valeur FOV saisie par l'utilisateur (key du number_input).
+# - mode_annotation_selectbox / mode_annotation_selectbox_edit: str -> Valeurs des selectbox (création / édition).
+# - type_objet_selectbox_create / type_objet_selectbox_edit: str
+# - fonction_objet_selectbox_create / fonction_objet_edit: str
+# - decalage_orientation: int ->  Décalage d'orientation utilisateur (key du number_input).
+# - gpkg: UploadedFile (key du file_uploader)
+# - tmp_gpkg_path: str -> Chemin du gpkg temporaire créé par prepare_temp_gpkg (à nettoyer après usage).
+# - pannellum_yaw / pannellum_pitch / pannellum_hfov: float -> État du viewer 360 maintenu entre rerun.
+# - _rerun_once: bool -> Flag temporaire pour éviter boucle rerun lors de MAJ venant du JS.
+# - reset_search_field: bool -> Flag pour réinitialiser proprement le champ de recherche après rerun.
+
+# Notes :
+# - Documenter chaque nouvelle clé, qui l'initialise et quand la supprimer.
 
 # --- CONFIGURATION DE LA PAGE STREAMLIT ---
 st.set_page_config(layout="wide")
@@ -36,6 +79,12 @@ if "selected_annotation" not in st.session_state:
 # Initialisation du session_state pour le clic dans l'image
 if "last_click" not in st.session_state:
     st.session_state["last_click"] = None
+# Initialisation du session_state pour l'action à affectuer par le JS
+if "cmd_action" not in st.session_state:
+    st.session_state.cmd_action = None
+# Initialisation du session_state des données pour le JS
+if "cmd_data" not in st.session_state:
+    st.session_state.cmd_data = None
 
 # --- SAISIE DU CHEMIN DU DOSSIER IMAGES ---
 image_folder = st.text_input(
@@ -86,6 +135,11 @@ exif_output_file = os.path.join(image_folder, "exif_data.json")
 if image_folder and image_files and not os.path.exists(exif_output_file):
     extraire_et_sauvegarder_exif(image_folder, exif_output_file)
 
+exif_data = {}
+if os.path.exists(exif_output_file):
+    with open(exif_output_file, "r", encoding="utf-8") as f:
+        exif_data = json.load(f)
+
 #if "backup_created" not in st.session_state:
 #    creer_backup_annotations(annotations_file)
 #    st.session_state.backup_created = True
@@ -104,14 +158,18 @@ except Exception:
 # --- SIDEBAR STREAMLIT : PARAMÈTRES, NAVIGATION, OUTILS ---
 with st.sidebar:
     # Affichage du logo
-    st.image("assets/Logo_photomapon_horizontal_VF_02.svg", use_container_width=True)
+    st.image("assets/Logo_photomapon_horizontal_VF_02.svg", width='stretch')
     st.sidebar.markdown("_Ce logiciel est libre, vous pouvez le modifier et le redistribuer dans les conditions définies par la licence._ [GPL v3.0](https://www.gnu.org/licenses/gpl-3.0.html)")
     st.sidebar.markdown("[Documentation du projet](https://carteetliens.github.io/photomapon/)")
     st.sidebar.markdown("---")
+    st.sidebar.markdown("### Pour les photos standards")
     # Saisie du FOV utilisateur
-    fov_user = st.number_input("Champ de vision (FOV en degrés)", min_value=70.0, max_value=180.0,
+    fov_user = st.number_input("Champ de vision (FOV en degrés)", min_value=30.0, max_value=180.0,
                                  value=104.6, step=0.1, key="fov_input")
-    
+    # Saisie du décalage vertical de la photo par l'utilisateur
+    #offset_vertical_deg = st.number_input("Décalage vertical (+/-30°)", min_value=-30.0, max_value=30.0, value=0.0, step=0.5, key="offset_vertical")
+
+    st.sidebar.markdown("---")
     # Sélection des paramètres d'annotation si config chargée
     if "annotations" in config:
         mode_annotations = list({c for details in config["annotations"].values() for c in details["mode_annotation"]})
@@ -131,38 +189,27 @@ with st.sidebar:
     fonction_objet = st.session_state.get("fonction_objet_selectbox_create")
 
     # Raccourcis pour recharger la config ou réinitialiser les annotations de l'image courante
-    if st.button("🔄 Recharger la configuration YAML", use_container_width=True):
+    if st.button("🔄 Recharger la configuration YAML", width='stretch'):
         st.rerun()
     
         # --- Bouton pour forcer la régénération
-    if st.button("💾 Recalculer les EXIF des images", use_container_width=True):
+    if st.button("💾 Recalculer les EXIF des images", width='stretch'):
         with st.spinner("Extraction des données EXIF..."):
             exif_data = extraire_et_sauvegarder_exif(image_folder, exif_output_file, reset=True)
         st.success("EXIF recalculées et sauvegardées.")
         st.cache_data.clear()  # important pour forcer le rechargement
         st.rerun()
-
-    # Réinitialiser les annotations sur l'image
-    if st.button("🗑️ Réinitialiser l'image actuelle", use_container_width=True) and image_files:
-        current_img = image_files[st.session_state.current_image_index]
-        reinitialiser_annotations_image(current_img, annotations_file, st.session_state)        
-        sauvegarder_annotations(annotations_file, st.session_state.annotations)
-        st.rerun()
     
-    # Navigation entre les images
-    st.markdown("### Navigation")
-    col_nav1, col_nav2 = st.columns(2)
-    with col_nav1:
-        if st.button("◀️ Précédente", use_container_width=True) and image_files:
-            st.session_state.current_image_index = (st.session_state.current_image_index - 1) % len(image_files)
-            st.rerun()
-    with col_nav2:
-        if st.button("Suivante ▶️", use_container_width=True) and image_files:
-            st.session_state.current_image_index = (st.session_state.current_image_index + 1) % len(image_files)
-            st.rerun()
-
+    
+    st.sidebar.markdown("---")
     st.markdown("### Traitement final")
-    # Import d'un GeoPackage existant et sélection de la couche
+
+    # Initialisation des variables
+    #hauteur_cam = None
+    decalage_orientation = None
+    # Definie la valeur du décalage de l'orientation de la photo (parfois 0° = Est donc 90 parfois 0° = Nord donc 0)
+    decalage_orientation = st.number_input("**Objectif** : _Appliquer un décalage pour un référentiel 0° = Nord (0 = pas de décalage nécessaire - 90 = passage à 0° au Nord si référentiel à l'Est)_", min_value=0, max_value=180,
+                                value=0, step=1, key="decalage_orientation")
     ancien_gpkg_file = st.file_uploader("Sélectionner le GeoPackage source (.gpkg, EPSG:2154)", type=["gpkg"], key="gpkg")
     selected_layer = None
     gdf = None
@@ -176,7 +223,7 @@ with st.sidebar:
 
     st.sidebar.markdown("---")
     # Bouton de lancement du traitement cartographique
-    if st.button("🗺️ Cartographier les éléments 🗺️", use_container_width=True):
+    if st.button("🗺️ Cartographier les éléments 🗺️", width='stretch'):
         if ancien_gpkg_file:
             with st.spinner("Traitement en cours..."):
                 try:
@@ -192,7 +239,7 @@ with st.sidebar:
 
                     # Appel des fonctions
                     dessiner_annotations_sur_images(image_folder)
-                    creer_gpkg_complet(annotations_json, exif_json, st.session_state["tmp_gpkg_path"], gpkg_output, image_folder, selected_layer)
+                    creer_gpkg_complet(annotations_json, exif_json, st.session_state["tmp_gpkg_path"], gpkg_output, image_folder, selected_layer, decalage_orientation)
                     st.success("Traitement terminé avec succès.")
 
                 except Exception as e:
@@ -215,28 +262,53 @@ with st.sidebar:
 
 # --- AFFICHAGE PRINCIPAL : IMAGE, ANNOTATIONS, TABLEAU ---
 if image_files:
-    # Chargement de l'image courante et de ses dimensions
     current_img_idx = st.session_state.get("current_image_index", 0)
-    image_name = image_files[current_img_idx]
+    image_name = image_files[st.session_state.current_image_index]
+    total_images = len(image_files)
+    current_idx = st.session_state.current_image_index + 1  # pour un affichage humain (1 au lieu de 0)
+
     img_path = os.path.join(image_folder, image_name)
     img_fullres = Image.open(img_path).convert("RGBA")
     full_width, full_height = img_fullres.size
+
+
     # Redimensionnement de l'image pour affichage (max 800px de large)
     display_img, ratio = redimens_image(img_fullres, max_width=800)
     # Initialisation de la liste d'annotations pour l'image si besoin
     if image_name not in st.session_state.annotations:
         st.session_state.annotations[image_name] = []
-    # Dataframe annotations
-    df_annotations = creer_dataframe_annotations(st.session_state.annotations[image_name])
-    # Overlay sur les images
-    overlay = dessiner_overlay(display_img, st.session_state.annotations[image_name], df_annotations, ratio, st.session_state.get("selected_annotation"), fov_user)
-    # Affichage de l'image annotée et récupération du clic utilisateur
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        click_key = f"main_image_{st.session_state.get('click_count', 0)}"
-        merged_img = Image.alpha_composite(display_img, overlay)
-        coords = streamlit_image_coordinates(merged_img, key="click_key", width=800)
-        st.text(image_name)
+    
+    # --- Barre de recherche directe vers une image ---
+    col_a1, col_a2 = st.columns([2, 4], vertical_alignment="bottom")
+    with col_a1:
+        # Zone de recherche par nom de photo + nom de la photo + n°x/x photos dans le dossier
+        search_term = st.text_input(
+            f"**{image_name} ( {current_idx} / {total_images} )**",
+            key="image_search_input",
+            placeholder=f"Recherche par nom de photo - Exemple : IMG_0150 ou façade_nord"
+        )
+    with col_a2:
+        go_button = st.button("🔍")
+
+    # Recherche déclenchée uniquement si bouton pressé
+    if go_button and search_term:
+        term = search_term.strip().lower()
+        matching = [img for img in image_files if term in img.lower()]
+
+        if len(matching) == 1:
+            # une seule correspondance : on met à jour l'image courante
+            target_image = matching[0]
+            st.session_state.current_image_index = image_files.index(target_image)
+            st.session_state["reset_search_field"] = True
+            st.rerun()
+        elif len(matching) > 1:
+            st.info(f"🔎 {len(matching)} images correspondent, précisez davantage.")
+        else:
+            st.warning("❌ Aucune image correspondante trouvée.")
+
+    # Réinitialisation propre du champ après le rerun
+    if "reset_search_field" in st.session_state:
+        del st.session_state["reset_search_field"]
 
     # --- CHARGEMENT ET AFFICHAGE DES MÉTADONNÉES EXIF ---
     if image_folder:
@@ -250,6 +322,109 @@ if image_files:
                 st.warning(f"Les EXIF pour {image_name} ne sont pas disponibles dans le fichier JSON.")
         else:
             st.error(f"Le fichier {exif_output_file} n'existe pas.")
+            
+    col_b1, col_b2 = st.columns([2, 1])
+    with col_b1:
+        
+        # Condition d'affichage auto si photo 360° ou photo standard
+        # VISIONNEUSE PHOTO 360°
+        if is_360_photo(full_width, full_height):
+            # Dataframe annotations
+            df_annotations = creer_dataframe_annotations_360(st.session_state.annotations[image_name])
+            # Préparer la liste des hotspots au format attendu par le composant
+            yaw = st.session_state.get("pannellum_yaw", 0)
+            pitch = st.session_state.get("pannellum_pitch", 0)
+            hfov = st.session_state.get("pannellum_hfov", 110)
+            hotspots_for_image = prepare_hotspots_for_pannellum(st.session_state.annotations, image_name)
+
+            # Définission du viewer Pannelum
+            updated_hotspots = pannellum_viewer(
+                image_path=img_path,
+                pitch=pitch,
+                yaw=yaw,
+                hfov=hfov,
+                height=600,
+                mode_annotation=mode_annotation,
+                type_objet=type_objet,
+                fonction_objet=fonction_objet,
+                hotspots=hotspots_for_image,
+                img_width=full_width,
+                img_height=full_height,
+                selected_uuid=st.session_state.get("selected_annotation"),
+                cmd_action=st.session_state.get("cmd_action"),
+                cmd_data=st.session_state.get("cmd_data"),
+                direction=locals().get("direction", 0),
+                key=f"pannellum_{image_name}",
+            )
+
+            # --- Mise à jour des annotations si changements ---
+            if direction is not None:
+                if updated_hotspots and 'hotspots' in updated_hotspots:
+                    new_annotations = [pannellum_to_metier(hs, direction) for hs in updated_hotspots['hotspots']]
+                    current_annotations = st.session_state.annotations.get(image_name, [])
+
+                    # On écrase uniquement si les annotations ont vraiment changé
+                    if new_annotations != current_annotations:
+                        st.session_state.annotations[image_name] = new_annotations
+                        sauvegarder_annotations(annotations_file, st.session_state.annotations)
+
+                        # Mettre à jour la vue Pannellum
+                        st.session_state.pannellum_yaw = updated_hotspots.get('yaw', 0)
+                        st.session_state.pannellum_pitch = updated_hotspots.get('pitch', 0)
+                        st.session_state.pannellum_hfov = updated_hotspots.get('hfov', 110)
+
+                        # Réinitialiser les commandes inutiles
+                        st.session_state.cmd_action = None
+                        st.session_state.cmd_data = None
+
+                        # Flag pour ne rerun qu'une seule fois
+                        st.session_state._rerun_once = True
+                        st.rerun()
+            
+            # Reset du flag si présent
+            if st.session_state.get("_rerun_once"):
+                st.session_state._rerun_once = False
+            elif direction is None:
+                st.warning(f"La direction n'est pas présente dans les EXIF pour {image_name}. Aucune annotation ne sera enregistrée dans le JSON.")
+        else:
+            # VISIONNEUSE PHOTO STANDARD
+            # Dataframe annotations
+            df_annotations = creer_dataframe_annotations(st.session_state.annotations[image_name])
+            # Overlay sur les images
+            overlay = dessiner_overlay(display_img, st.session_state.annotations[image_name], df_annotations, ratio, st.session_state.get("selected_annotation"), fov_user)
+            # Affichage de l'image annotée et récupération du clic utilisateur
+            merged_img = Image.alpha_composite(display_img, overlay)
+            # Visionneuse photo standard
+            coords = streamlit_image_coordinates(merged_img, key="click_key", width=800)
+            # Ajout d'une annotation si clic utilisateur
+            if direction is not None:
+                if coords:
+                    x_orig = int(coords["x"] / ratio)
+                    y_orig = int(coords["y"] / ratio)
+                    current_click = (x_orig, y_orig)
+                    angle_ajuste = calculer_angle_objet(x_orig, full_width, direction, fov=fov_user)
+                    fov_vertical = calculer_fov_vertical(fov_user, full_width, full_height)
+                    angle_vertical = calculer_angle_elevation(y_orig, full_height, fov_vertical)
+                    # Ajoute l'annotation si ce n'est pas un doublon, puis sauvegarde et rafraîchit
+                    if ajouter_annotation(st.session_state.annotations, image_name,x_orig, y_orig, st.session_state.get("type_objet_selectbox_create"), st.session_state.get("fonction_objet_selectbox_create"), st.session_state.get("mode_annotation_selectbox"), angle_ajuste, angle_vertical ,st.session_state["last_click"]):
+                            # Sauvegarder dans le fichier JSON
+                            sauvegarder_annotations(annotations_file, st.session_state.annotations)
+                            # Mémoriser ce dernier clic comme déjà traité
+                            st.session_state["last_click"] = current_click
+                            st.rerun()
+            elif direction is None:
+                st.warning(f"La direction n'est pas présente dans les EXIF pour {image_name}. Aucune annotation ne sera enregistrée dans le JSON.")
+        # Navigation entre les images
+        col_nav1, col_nav2 = st.columns(2)
+        with col_nav1:
+            if st.button("◀️ Précédente", width='stretch') and image_files:
+                st.session_state.current_image_index = (st.session_state.current_image_index - 1) % len(image_files)
+                st.rerun()
+        with col_nav2:
+            if st.button("Suivante ▶️", width='stretch') and image_files:
+                st.session_state.current_image_index = (st.session_state.current_image_index + 1) % len(image_files)
+                st.rerun()
+            
     # Affichage des informations EXIF si disponibles
     if lat is not None and lon is not None:
         if "data_test" in image_folder:
@@ -260,27 +435,13 @@ if image_files:
         st.markdown(f"🧭 **Orientation :** {round(float(direction), 4)}°" if direction is not None else "🧭 **Orientation :** Non disponible")
         st.markdown(f"🖼️ **Format :** {image_format}")
     else:
-        st.write("Les métadonnées EXIF ne sont pas disponibles pour cette image.")
-    
-    # --- AJOUT D'UNE ANNOTATION SI CLIC UTILISATEUR ---
-    if coords:
-        x_orig = int(coords["x"] / ratio)
-        y_orig = int(coords["y"] / ratio)
-        current_click = (x_orig, y_orig)
-        angle_ajuste = calculer_angle_porte(x_orig, full_width, direction, fov=fov_user)
-        # Ajoute l'annotation si ce n'est pas un doublon, puis sauvegarde et rafraîchit
-        if ajouter_annotation(st.session_state.annotations, image_name,x_orig, y_orig, st.session_state.get("type_objet_selectbox_create"), st.session_state.get("fonction_objet_selectbox_create"), st.session_state.get("mode_annotation_selectbox"), angle_ajuste,st.session_state["last_click"]):
-                # Sauvegarder dans le fichier JSON
-                sauvegarder_annotations(annotations_file, st.session_state.annotations)
-                # Mémoriser ce dernier clic comme déjà traité
-                st.session_state["last_click"] = current_click
-                st.rerun()
-    
-    with col2:
+        st.write("Les métadonnées EXIF ne sont pas disponibles pour cette image.")  
+  
+    with col_b2:
         # --- AFFICHAGE DU TABLEAU DES ANNOTATIONS ---
         st.markdown("### Tableau des annotations")
         if not df_annotations.empty:
-            st.dataframe(df_annotations, use_container_width=True, hide_index=True)
+            st.dataframe(df_annotations, width='stretch', hide_index=True)
             # Liste des index avec None pour "aucune sélection"
             index_options = [None] + list(df_annotations['index'])
 
@@ -290,6 +451,17 @@ if image_files:
                     return "Sélectionnez une annotation"
                 row = df_annotations[df_annotations['index'] == idx].iloc[0]
                 return f"{idx} - {row['type_objet']} - {row['fonction_objet']}"
+            
+            # Réinitialiser les annotations sur l'image
+            if st.button("🗑️ Réinitialiser l'image actuelle", key=f"clearall_{st.session_state.selected_annotation}", width='stretch') and image_files:
+                if is_360_photo(full_width, full_height):
+                    st.session_state.cmd_action = "clear_all"
+                    st.rerun()
+                else:
+                    current_img = image_files[st.session_state.current_image_index]
+                    reinitialiser_annotations_image(current_img, annotations_file, st.session_state)        
+                    sauvegarder_annotations(annotations_file, st.session_state.annotations)
+                    st.rerun()
             # Sélecteur d'annotation à modifier/supprimer
             selected_index = st.selectbox(
                 "Sélectionner une annotation",
@@ -338,32 +510,59 @@ if image_files:
                     "Type d'utilisation", types, index=idx, key="fonction_objet_edit"
                 )
 
-            # Boutons pour modifier ou supprimer l'annotation sélectionnée
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("📝 Modifier", key=f"modify_{st.session_state.selected_annotation}", use_container_width=True):
-                    if modifier_annotation(
-                        st.session_state.annotations,
-                        image_name,
-                        st.session_state.selected_annotation,
-                        type_objet_edit,
-                        fonction_objet_edit,
-                        mode_annotation_edit
-                    ):
+            # Boutons pour modifier ou supprimer l'annotation sélectionnée conditionner suivant le type de photo (360° ou standard)
+            col_c1, col_c2 = st.columns(2)
+            with col_c1:
+                if st.button("📝 Modifier", key=f"modify_{st.session_state.selected_annotation}", width='stretch'):
+                    # PHOTO 360°
+                    if is_360_photo(full_width, full_height):
+                        # Envoi de la commande "update" au composant JS
+                        st.session_state.cmd_action = "update"
+                        st.session_state.cmd_data = {
+                            "uuid": st.session_state.selected_annotation,
+                            "type_objet": type_objet_edit,
+                            "fonction_objet": fonction_objet_edit,
+                            "mode_annotation": mode_annotation_edit
+                        }
+                        st.success("Modifications appliquées")
+                        st.rerun()
+                    # PHOTO STANDARD
+                    else:
+                        modifier_annotation(
+                            st.session_state.annotations,
+                            image_name,
+                            st.session_state.selected_annotation,
+                            type_objet_edit,
+                            fonction_objet_edit,
+                            mode_annotation_edit
+                        )
                         sauvegarder_annotations(annotations_file, st.session_state.annotations)
                         st.success("Modifications appliquées")
                         st.rerun()
 
-            with col2:
-                if st.button("🗑️ Supprimer", key=f"delete_{st.session_state.selected_annotation}", use_container_width=True):
-                    if supprimer_annotation(
-                            st.session_state.annotations,
-                            image_name,
-                            st.session_state.selected_annotation
-                        ):
+            with col_c2:
+                if st.button("🗑️ Supprimer", key=f"delete_{st.session_state.selected_annotation}", width='stretch'):
+                    # PHOTO 360°
+                    if is_360_photo(full_width, full_height):
+                        st.session_state.cmd_action = "delete"
+                        st.session_state.cmd_data = {
+                            "uuid": st.session_state.selected_annotation,
+                            "yaw": st.session_state.pannellum_yaw,      
+                            "pitch": st.session_state.pannellum_pitch,    
+                            "hfov": st.session_state.pannellum_hfov       
+                        }
+                        st.success("Annotation supprimée")
+                        st.session_state.selected_annotation = None
+                        st.rerun()
+                    # PHOTO STANDARD
+                    else:
+                        supprimer_annotation(
+                                st.session_state.annotations,
+                                image_name,
+                                st.session_state.selected_annotation
+                            )
                         sauvegarder_annotations(annotations_file, st.session_state.annotations)
                         st.success("Annotation supprimée")
                         st.session_state.selected_annotation = None
                         st.rerun()
-else:
     st.markdown("---")

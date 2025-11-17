@@ -1,4 +1,5 @@
 # -----------------------------------------------------------------------------
+# Version 1.1 PhotoMapon
 # Auteur      : Joseph Jacquet | Carte et Liens
 # Contact     : contact@carteetliens.fr | www.carteetliens.fr
 # Licence     : Ce projet est publié sous la licence GNU GPL v3.

@@ -1,4 +1,4 @@
-# Photo'Mapon | Carte et Liens – Application d’annotations de photos et de cartographie automatisée
+# Photo'Mapon v1.1 | Carte et Liens – Application d’annotations de photos et de cartographie automatisée
 
 ## Description rapide
 
@@ -27,6 +27,8 @@ Ce projet utilise les bibliothèques suivantes :
 
 
 La liste complète des dépendances figure dans le fichier `requirements.txt`.
+
+L'application utilise également la bibliothèque JavaScript Pannelum dans sa version 2.56 (MIT License) intégrée directement dans le dossier Photomapon (./my_visu360/frontend).
 
 ## Installation des dépendances
 

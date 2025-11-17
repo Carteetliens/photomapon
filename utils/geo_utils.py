@@ -1,4 +1,5 @@
 # -----------------------------------------------------------------------------
+# Version 1.1 PhotoMapon
 # Auteur      : Joseph Jacquet | Carte et Liens
 # Contact     : contact@carteetliens.fr | www.carteetliens.fr
 # Licence     : Ce projet est publié sous la licence GNU GPL v3.
@@ -28,8 +29,20 @@ def convertir_wgs84_vers_lambert93(lat, lon):
     return x, y
 
 # Création de la ligne de vue (segment) à partir d’un point, d’un angle et d’une longueur
-def creer_ligne_de_vue(x, y, angle_deg, longueur=150):
-    angle_rad = math.radians(90 - angle_deg)  # Nord=0°
+def creer_ligne_de_vue(x, y, angle_deg, decalage_orientation, longueur=150):
+    """
+    Création de la ligne de vue (segment) à partir d’un point, d’un angle et d’une longueur.
+    
+    :param x: Coordonnée x du point de départ
+    :param y: Coordonnée y du point de départ
+    :param angle_deg: Angle de la ligne de vue
+    :param decalage_orientation: Décalage d'orientation à appliquer
+    :param longueur: Longueur de la ligne de vue
+    :return: LineString représentant la ligne de vue
+    """
+    # Appliquer le décalage d'orientation uniquement si nécessaire
+    angle_rad = math.radians(decalage_orientation - angle_deg) if decalage_orientation > 0 else math.radians(-angle_deg)
+    
     dx = math.cos(angle_rad) * longueur
     dy = math.sin(angle_rad) * longueur
     return LineString([(x, y), (x + dx, y + dy)])
@@ -63,7 +76,7 @@ def preparer_colonnes_maj_objet(gdf_geom, points_maj_objet):
     return gdf_geom
 
 # Fonction principale
-def creer_gpkg_complet(annotations_json, exif_json, ancien_gpkg, gpkg_output, image_folder, selected_layer):
+def creer_gpkg_complet(annotations_json, exif_json, ancien_gpkg, gpkg_output, image_folder, selected_layer, decalage_orientation):
     """
     Fonction principale de traitement géomatique :
     - Prend en entrée des annotations d'images, des données EXIF, un GeoPackage source et un dossier d'images.
@@ -161,7 +174,7 @@ def creer_gpkg_complet(annotations_json, exif_json, ancien_gpkg, gpkg_output, im
         ang = pt['angle_ajuste']
         if ang is None:
             continue
-        lv = creer_ligne_de_vue(pt.geometry.x, pt.geometry.y, ang)
+        lv = creer_ligne_de_vue(pt.geometry.x, pt.geometry.y, ang, decalage_orientation)
         inters = gdf_geom[gdf_geom.geometry.intersects(lv)].copy()
         if inters.empty:
             continue
@@ -180,7 +193,7 @@ def creer_gpkg_complet(annotations_json, exif_json, ancien_gpkg, gpkg_output, im
         ang = pt['angle_ajuste']
         if ang is None:
             continue
-        lv = creer_ligne_de_vue(pt.geometry.x, pt.geometry.y, ang)
+        lv = creer_ligne_de_vue(pt.geometry.x, pt.geometry.y, ang, decalage_orientation)
         inters = lignes_bat[lignes_bat.geometry.intersects(lv)]
         if inters.empty:
             continue
@@ -208,7 +221,20 @@ def creer_gpkg_complet(annotations_json, exif_json, ancien_gpkg, gpkg_output, im
         objet_contenant = gdf_geom[
             gdf_geom.geometry.intersects(buffer)
         ]
-        objet_id = objet_contenant['id'].iloc[0] if not objet_contenant.empty else None
+        if not objet_contenant.empty:
+            # Priorités : 'id' (minuscule), 'ID' (majuscules), sinon index (fid)
+            if 'id' in objet_contenant.columns:
+                objet_id = objet_contenant['id'].iloc[0]
+            elif 'ID' in objet_contenant.columns:
+                objet_id = objet_contenant['ID'].iloc[0]
+            else:
+                # fallback : retourne le premier index (feature id) pour garder une référence
+                try:
+                    objet_id = objet_contenant.index[0]
+                except Exception:
+                    objet_id = None
+        else:
+            objet_id = None
 
         # Ajouter le point ajusté à la liste des points cartographiques
         points_carto.append({
@@ -282,7 +308,7 @@ def creer_gpkg_complet(annotations_json, exif_json, ancien_gpkg, gpkg_output, im
             ref_objet = sub_df.iloc[0]
             angle_ajuste_ref = ref_objet['angle_ajuste']
             image_ref = ref_objet['image_name']
-
+            base = decalage_orientation
             # Récupère le point photo associé
             pt_photo = gdf_points[gdf_points['image_name'] == image_ref]
             if pt_photo.empty:
@@ -328,7 +354,6 @@ def creer_gpkg_complet(annotations_json, exif_json, ancien_gpkg, gpkg_output, im
         gdf_reference_points = gpd.GeoDataFrame(reference_records, crs=gdf_carto.crs)
         mode = 'a'
     else:
-        # Si aucun point cartographique, on crée un GeoDataFrame vide
         gdf_carto = gpd.GeoDataFrame(
             {
                 'image_name': [], 'x_lambert93': [], 'y_lambert93': [],
@@ -336,6 +361,33 @@ def creer_gpkg_complet(annotations_json, exif_json, ancien_gpkg, gpkg_output, im
             },
             geometry=gpd.GeoSeries([], crs='EPSG:2154'), crs='EPSG:2154'
         )
+        
+        gdf_reference_points = gpd.GeoDataFrame(
+            {
+                'geometry': [],
+                'objet_id': [],
+                'type_objet': [],
+                'fonction_objet': [],
+                'group_attr': [],
+                'subgroup_id': [],
+                'angle_ajuste_ref': [],
+                'orientation_moyenne': []
+            },
+            geometry='geometry',
+            crs='EPSG:2154'
+        )
+
+        gdf_lignes_vue = gpd.GeoDataFrame(
+            {
+                'geometry': [],
+                'objet_id': [],
+                'subgroup_id': [],
+                'angle_utilise': []
+            },
+            geometry='geometry',
+            crs='EPSG:2154'
+        )
+
         mode = 'w'
 
     # --- 10. Tracé des lignes de vue depuis les points de référence ---
@@ -345,7 +397,7 @@ def creer_gpkg_complet(annotations_json, exif_json, ancien_gpkg, gpkg_output, im
         # On utilise l'orientation moyenne comme angle de vue
         angle = ref['orientation_moyenne']
         # Génération de la ligne de vue
-        lv = creer_ligne_de_vue(x_ref, y_ref, angle, longueur=150)
+        lv = creer_ligne_de_vue(x_ref, y_ref, angle, decalage_orientation, longueur=150)
         lines_records.append({
             'geometry': lv,
             'objet_id': ref['objet_id'],
@@ -361,7 +413,7 @@ def creer_gpkg_complet(annotations_json, exif_json, ancien_gpkg, gpkg_output, im
     for _, ref in gdf_reference_points.iterrows():
         x_ref, y_ref = ref.geometry.x, ref.geometry.y
         angle = ref['orientation_moyenne']
-        lv = creer_ligne_de_vue(x_ref, y_ref, angle, longueur=150)
+        lv = creer_ligne_de_vue(x_ref, y_ref, angle, decalage_orientation, longueur=150)
         
         # Recherche des intersections avec les lignes de bâtiments
         inters = lignes_bat[lignes_bat.geometry.intersects(lv)]

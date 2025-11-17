@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Pannellum Viewer</title>
+  <link rel="stylesheet" href="./pannellum.css"/>
+  <script src="./pannellum.js"></script>
+  <style>
+    /* Style global
+    - Configuration de la vue panoramique en plein écran
+    - Définition des styles pour les points d'intérêt (hotspots)
+    - 3 types de hotspots avec codes couleur : rouge (cartographie), jaune (carto_libre), bleu (maj_objet)
+    - Gestion des textes et tooltips avec effets visuels
+    */
+    body, html, #panorama { width:100%; height:100%; margin:0; padding:0; overflow:hidden; }
+    .custom-hotspot {
+      width: 20px;
+      height: 20px;
+      border: 2px solid white;
+      border-radius: 50%;
+      cursor: pointer;
+      background-color: gray;
+    }  
+    .custom-hotspot.cartographie { background-color: red; }
+    .custom-hotspot.carto_libre { background-color: yellow; }
+    .custom-hotspot.maj_objet { background-color: blue; }
+
+    /* Texte toujours visible */
+    .hotspot-text {
+      position: absolute;
+      left: 25px;
+      top: -20px;
+      color: white;
+      font-weight: bold;
+      font-size: 14px;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 3px 6px;
+      border-radius: 4px;
+      pointer-events: none;
+      text-shadow:
+        -1px -1px 0 #000,
+        1px -1px 0 #000,
+        -1px 1px 0 #000,
+        1px 1px 0 #000;
+      white-space: nowrap;
+      font-family:bahnschrift;
+    }
+
+    /* Tooltip au survol */
+    .hotspot-tooltip {
+      position: absolute;
+      left: 25px;
+      top: 20px;
+      color: white;
+      font-size: 13px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 5px 8px;
+      border-radius: 5px;
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 1000;
+      display: none;
+      font-family:bahnschrift;
+    }
+
+    .custom-hotspot:hover .hotspot-text {
+      opacity: 1;
+    }
+
+    .hotspot-selected {
+      background-color: yellow !important;
+      border: 2px solid rgb(255, 255, 255) !important;
+      font-family:bahnschrift;
+    }
+  </style>
+</head>
+<body>
+  <div id="panorama"></div>
+
+ <script>
+  // ---------------------
+  // Variables globales
+  // ---------------------
+  let globalHotspots = [];
+  let currentImage = null;
+  let imgWidth = 0;
+  let imgHeight = 0;
+  let mode_annotation = "";
+  let type_objet = "";
+  let fonction_objet = "";
+  let selectedUuid = null;
+  let sendPending = false;       // anti spam vers Python
+  let viewerReady = false;
+
+  /* UUID Generator
+  Génère un identifiant unique universel (UUID v4) pour chaque hotspot
+  Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx */
+  function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+
+  /* sendHotspotsToPython
+  Fonction cruciale qui :
+  - Transmet l'état des hotspots à Python
+  - Inclut la position de la caméra (yaw, pitch, hfov)
+  - Implémente un anti-spam pour éviter la surcharge
+  - Gère la communication via Streamlit */
+  function sendHotspotsToPython(reason = "") {
+    if (!window._psv_viewer) {
+      console.warn("[my_visu360] sendHotspotsToPython: viewer not ready -", reason);
+      return;
+    }
+    if (sendPending) {
+      console.warn("[my_visu360] sendHotspotsToPython blocked (pending) -", reason);
+      return;
+    }
+    sendPending = true;
+    console.log(`[my_visu360] Sending hotspots to Python (${reason})`, globalHotspots);
+
+    try {
+      const payload = {
+        hotspots: globalHotspots,
+        yaw: window._psv_viewer.getYaw(),
+        pitch: window._psv_viewer.getPitch(),
+        hfov: window._psv_viewer.getHfov()
+      };
+
+      if (window.Streamlit && typeof window.Streamlit.setComponentValue === "function") {
+        window.Streamlit.setComponentValue(payload);
+      } else {
+        window.parent.postMessage({
+          isStreamlitMessage: true,
+          type: "streamlit:setComponentValue",
+          value: payload
+        }, "*");
+      }
+
+      console.log("[my_visu360] Sent payload to Python");
+    } catch (e) {
+      console.error("[my_visu360] Error sending hotspots to Python:", e);
+    }
+
+    // délai anti-spam court pour éviter l'afflux de setComponentValue
+    setTimeout(() => { sendPending = false; }, 50);
+  }
+
+  /* removeHotspotByUUID
+  Gestion de la suppression d'un hotspot :
+  1. Suppression visuelle dans Pannellum
+  2. Mise à jour de la liste globale
+  3. Réindexation des numéros
+  4. Synchronisation avec Python */
+  function removeHotspotByUUID(uuid) {
+    if (!window._psv_viewer) {
+      console.warn("[my_visu360] removeHotspotByUUID: viewer not ready");
+      return;
+    }
+    console.log("[my_visu360] removeHotspotByUUID called for", uuid);
+
+    // 1) supprimer visuellement dans pannellum (silencieusement)
+    try { window._psv_viewer.removeHotSpot(uuid); } catch (e) { /* ignore */ }
+
+    // 2) retirer de la liste globale
+    const beforeLen = globalHotspots.length;
+    globalHotspots = globalHotspots.filter(h => h.id !== uuid);
+    globalHotspots.forEach((h,i) => h.index = i+1);
+    const afterLen = globalHotspots.length;
+    console.log(`[my_visu360] Removed hotspot ${uuid} — before:${beforeLen} after:${afterLen}`);
+
+    // 3) re-injecter (purge puis ajout) pour garder numéros cohérents
+    if (window._psv_viewer) {
+      const old = window._psv_viewer.getConfig().hotSpots || [];
+      old.forEach(hs => { try { window._psv_viewer.removeHotSpot(hs.id); } catch(e) {} });
+    }
+    globalHotspots.forEach(h => addHotspotToViewer(h, null));
+
+    // 4) transmettre la nouvelle liste immédiatement à Python
+    sendHotspotsToPython("delete");
+  }
+
+  /**
+   sendHotspotsToPython
+   Envoie l'état courant (hotspots + position caméra) au backend (Streamlit ou parent window).
+   */
+  function updateHotspots(hotspots, selectedUuidParam) {
+    if (!window._psv_viewer) return;
+    // purge existant (évite duplications)
+    const old = window._psv_viewer.getConfig().hotSpots || [];
+    old.forEach(hs => { try { window._psv_viewer.removeHotSpot(hs.id); } catch(e) {} });
+
+    if (Array.isArray(hotspots)) {
+      hotspots.forEach(h => addHotspotToViewer(h, selectedUuidParam));
+    }
+    if (selectedUuidParam) highlightSelectedHotspot(selectedUuidParam);
+  }
+
+  /* addHotspotToViewer et updateHotspots
+  Gestion de l'affichage des hotspots :
+  - Création des éléments visuels
+  - Gestion des tooltips et labels
+  - Mise à jour dynamique de l'interface */
+  function addHotspotToViewer(h, selectedUuidParam) {
+    if (!h || !h.id || typeof h.pitch !== 'number' || typeof h.yaw !== 'number') {
+      console.warn("[my_visu360] addHotspotToViewer invalid data:", h);
+      return;
+    }
+    // éviter double ajout côté pannellum : si id déjà existe, skip
+    const viewerHs = (window._psv_viewer.getConfig().hotSpots || []);
+    if (viewerHs.find(x => x.id === h.id)) {
+      // existe déjà → on peut mettre à jour le tooltip/num (pas trivial) ; on skip pour simplicité
+      return;
+    }
+
+    const hotspotConfig = {
+      id: h.id,
+      pitch: h.pitch,
+      yaw: h.yaw,
+      cssClass: `custom-hotspot ${h.modeAnnotation || ""}`,
+      createTooltipFunc: function(hotSpotDiv) {
+        hotSpotDiv.classList.add("custom-hotspot");
+        if (h.modeAnnotation) hotSpotDiv.classList.add(h.modeAnnotation);
+        hotSpotDiv.setAttribute('data-id', h.id);
+
+        // label
+        const textDiv = document.createElement('div');
+        textDiv.className = 'hotspot-text';
+        textDiv.textContent = h.index || "";
+        hotSpotDiv.appendChild(textDiv);
+
+        // tooltip
+        const tooltipDiv = document.createElement('div');
+        tooltipDiv.className = 'hotspot-tooltip';
+        tooltipDiv.innerHTML = `
+          <strong>Mode:</strong> ${h.modeAnnotation || ""}<br>
+          <strong>Type:</strong> ${h.typeObjet || ""}<br>
+          <strong>Fonction:</strong> ${h.fonctionObjet || ""}
+        `;
+        hotSpotDiv.appendChild(tooltipDiv);
+
+        hotSpotDiv.addEventListener('mouseenter', () => { tooltipDiv.style.display = 'block'; });
+        hotSpotDiv.addEventListener('mouseleave', () => { tooltipDiv.style.display = 'none'; });
+      }
+    };
+
+    try {
+      window._psv_viewer.addHotSpot(hotspotConfig);
+    } catch (e) {
+      console.error("[my_visu360] addHotspotToViewer error:", e, h);
+    }
+  }
+
+  
+  /**
+  highlightSelectedHotspot
+  Met à jour la surbrillance CSS des hotspots dans le DOM pour refléter la sélection.
+  */
+  function highlightSelectedHotspot(uuid) {
+    document.querySelectorAll('.custom-hotspot').forEach(div => {
+      if (div.getAttribute('data-id') === uuid) div.classList.add('hotspot-selected');
+      else div.classList.remove('hotspot-selected');
+    });
+  }
+
+  /**
+  initPanoClick
+  Installe les gestionnaires de clic (clic droit → ajout de hotspot) sur la zone panoramique.
+   */
+  function initPanoClick() {
+    const panoDiv = document.getElementById("panorama");
+    panoDiv.onmousedown = function(e) {
+      if (e.button === 2) {
+        e.preventDefault();
+        if (!window._psv_viewer) return;
+        const coords = window._psv_viewer.mouseEventToCoords(e);
+        if (!coords) return;
+        const pitch = coords[0], yaw = coords[1];
+        if (imgWidth <= 0 || imgHeight <= 0) {
+          console.warn("[my_visu360] image dimensions not set; skip add");
+          return;
+        }
+
+        const x = Math.round((yaw + 180) * imgWidth / 360);
+        const y = Math.round((90 - pitch) * imgHeight / 180);
+        const id = generateUUID();
+        const newHot = {
+          id, pitch, yaw, x, y,
+          modeAnnotation: mode_annotation,
+          typeObjet: type_objet,
+          fonctionObjet: fonction_objet
+        };
+        globalHotspots.push(newHot);
+        globalHotspots.forEach((h,i) => h.index = i+1);
+
+        // Rafraîchir la vue (purge & inject)
+        updateHotspots(globalHotspots, selectedUuid);
+        console.log("[my_visu360] Added hotspot", newHot);
+
+        // Envoyer version à Python
+        sendHotspotsToPython("add");
+      }
+    };
+    panoDiv.oncontextmenu = (ev) => ev.preventDefault();
+  }
+
+  /* handleRenderProps
+  Point d'entrée principal pour la communication avec Streamlit :
+  - Gestion des commandes (delete, clear, update)
+  - Initialisation/mise à jour du viewer
+  - Synchronisation des états entre JS et Python */
+  function handleRenderProps(props) {
+    console.log("[my_visu360] handleRenderProps", props);
+
+    // commandes (delete/clear) prioritaires
+    if (props && props.cmd_action) {
+      console.log("[my_visu360] Received command:", props.cmd_action, props.cmd_data);
+      if (props.cmd_action === "delete") {
+        // si UUID fourni, suppression locale → JS va renvoyer la liste à Python
+        const uuid = props.cmd_data && (props.cmd_data.uuid || props.cmd_data);
+        if (uuid) {
+          removeHotspotByUUID(uuid);
+        } else {
+          console.warn("[my_visu360] delete command without uuid");
+        }
+        // on stoppe ici, ne pas écraser globalHotspots en aval
+        return;
+      }
+      if (props.cmd_action === "clear_all") {
+        globalHotspots = [];
+        sendHotspotsToPython("clear_all");
+        return;
+      }
+    if (props.cmd_action === "update") {
+      const { uuid, type_objet, fonction_objet, mode_annotation } = props.cmd_data || {};
+      const target = globalHotspots.find(h => h.id === uuid);
+      if (target) {
+        target.typeObjet = type_objet;
+        target.fonctionObjet = fonction_objet;
+        target.modeAnnotation = mode_annotation;
+        console.log("[my_visu360] Hotspot modifié:", target);
+        sendHotspotsToPython("update");
+      }
+      return;
+    }
+    }
+
+    // Variables classiques
+    const img = props.image_path;
+    const yaw = typeof props.yaw === 'number' ? props.yaw : 0;
+    const pitch = typeof props.pitch === 'number' ? props.pitch : 0;
+    const hfov = typeof props.hfov === 'number' ? props.hfov : 110;
+    mode_annotation = props.mode_annotation ?? "";
+    type_objet = props.type_objet ?? "";
+    fonction_objet = props.fonction_objet ?? "";
+    selectedUuid = props.selected_uuid ?? null;
+    imgWidth = props.img_width || imgWidth || 0;
+    imgHeight = props.img_height || imgHeight || 0;
+
+    /*IMPORTANT : normalement on remplace globalHotspots par ceux venant de Python
+    mais si la dernière action était une suppression par commande on a déjà renvoyé
+    la liste à Python et on veut préserver ce que JS a envoyé.
+    Ici, on écrase globalHotspots seulement si props.hotspots est défini ET si sa source
+    n'est pas une commande delete (déjà gérée plus haut). */
+
+    if (Array.isArray(props.hotspots)) {
+      globalHotspots = props.hotspots.slice();
+      globalHotspots.forEach((h,i) => h.index = i+1);
+    }
+
+    // Créer / recréer viewer si nouvelle image
+    if (img && img !== currentImage) {
+      currentImage = img;
+      if (window._psv_viewer) {
+        try { window._psv_viewer.destroy(); } catch(e) { console.warn("[my_visu360] destroy viewer err", e); }
+        document.getElementById("panorama").innerHTML = "";
+        viewerReady = false;
+      }
+
+      // créer viewer
+      try {
+        window._psv_viewer = pannellum.viewer("panorama", {
+          type: "equirectangular",
+          panorama: currentImage,
+          autoLoad: true,
+          yaw: yaw,
+          pitch: pitch,
+          hfov: hfov,
+          hotSpotDebug: false
+        });
+        viewerReady = true;
+      } catch (e) {
+        console.error("[my_visu360] pannellum.viewer creation error:", e);
+        return;
+      }
+
+      // initialisation des listeners après création
+      window._psv_viewer.on('load', function() {
+        console.log("[my_visu360] Viewer loaded, injecting hotspots:", globalHotspots);
+        updateHotspots(globalHotspots, selectedUuid);
+        highlightSelectedHotspot(selectedUuid);
+      });
+
+      // initialiser le clic une seule fois
+      initPanoClick();
+    } else if (window._psv_viewer) {
+      // Même image : purger et réinjecter tous les hotspots
+      const old = window._psv_viewer.getConfig().hotSpots || [];
+      old.forEach(hs => { try { window._psv_viewer.removeHotSpot(hs.id); } catch(e) {} });
+      updateHotspots(globalHotspots, selectedUuid);
+      if (selectedUuid) highlightSelectedHotspot(selectedUuid);
+    }
+
+    // Ajuster frame height si Streamlit disponible
+    if (window.Streamlit && typeof window.Streamlit.setFrameHeight === "function") {
+      try { window.Streamlit.setFrameHeight(); } catch(e) {}
+    } else {
+      try { window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:setFrameHeight" }, "*"); } catch(e){}
+    }
+  }
+
+  // ---------------------
+  // Setup initial : componentReady (doit être envoyé TÔT)
+  // et écoute des messages
+  // ---------------------
+  try {
+    window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:componentReady", apiVersion: 1 }, "*");
+    console.log("[my_visu360] componentReady posted");
+  } catch (e) {
+    console.warn("[my_visu360] failed to post componentReady", e);
+  }
+
+  // Écoute postMessage
+  window.addEventListener("message", (ev) => {
+    try {
+      const d = ev.data;
+      if (d?.type === "streamlit:render" && d.args) {
+        handleRenderProps(d.args);
+        return;
+      }
+      if (d?.my_visu360_props) {
+        handleRenderProps(d.my_visu360_props);
+        return;
+      }
+      if (d?.my_visu360_hotspots) {
+        handleRenderProps({hotspots: d.my_visu360_hotspots});
+        return;
+      }
+    } catch (err) {
+      console.warn("[my_visu360] postMessage handler error", err);
+    }
+  }, false);
+
+  // Streamlit RENDER_EVENT fallback
+  if (window.Streamlit && window.Streamlit.events) {
+    window.Streamlit.events.addEventListener(window.Streamlit.RENDER_EVENT, (event) => {
+      try { handleRenderProps(event.detail.args || {}); } catch(e) { console.warn("[my_visu360] error handling RENDER_EVENT", e); }
+    });
+  }
+
+  // Demande initiale de props au parent (fallback)
+  try { window.parent.postMessage({ my_visu360_request_props: true }, "*"); } catch(e){}
+
+  </script>
+</body>
+</html>
