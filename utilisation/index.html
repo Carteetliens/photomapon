@@ -421,9 +421,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#gerer-les-annotations" class="md-nav__link">
+  <a href="#gestion-des-annotations" class="md-nav__link">
     <span class="md-ellipsis">
-      Gérer les annotations
+      Gestion des annotations
     </span>
   </a>
   
@@ -478,6 +478,28 @@
           </ul>
         </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../maj/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Mise à jour
+    
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -612,9 +634,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#gerer-les-annotations" class="md-nav__link">
+  <a href="#gestion-des-annotations" class="md-nav__link">
     <span class="md-ellipsis">
-      Gérer les annotations
+      Gestion des annotations
     </span>
   </a>
   
@@ -653,11 +675,12 @@
   <h1>Principe de base</h1>
 
 <h2 id="1-prerequis-avant-lutilisation-de-lapplication"><strong>1. Prérequis avant l'utilisation de l'application</strong><a class="headerlink" href="#1-prerequis-avant-lutilisation-de-lapplication" title="Permanent link">&para;</a></h2>
+<p>L'application permet d'utiliser des photos standards et des photos à 360°.<br />
+Privilégiez un dossier par type de photos (standards et 360°) et par source afin d'éviter les décalages si les photos n'ont pas été prises avec le même appareil ou avec les mêmes paramètres.</p>
 <h3 id="disposer-du-chemin-vers-un-dossier-photo-et-connaitre-le-fov-de-limage"><strong><em>Disposer du chemin vers un dossier photo et connaître le FOV de l'image</em></strong><a class="headerlink" href="#disposer-du-chemin-vers-un-dossier-photo-et-connaitre-le-fov-de-limage" title="Permanent link">&para;</a></h3>
 <hr />
 <p>Les photos doivent contenir des données EXIF exploitables et précises pour garantir un rendu fiable (précision minimum conseillée : &lt; 1 m pour les coordonnées + direction).</p>
-<p>Il est nécessaire de connaître la valeur du FOV (champ de vision) de l’appareil photo.
-Cette valeur est à renseigner dans la barre latérale de l’interface.    </p>
+<p><em><strong>Pour les photos standards :</strong></em> Il est nécessaire de connaître la valeur du FOV (champ de vision) de l’appareil photo. Cette valeur est à renseigner dans la barre latérale de l’interface.    </p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
 <p><em>Figer le chemin et le FOV dans main.py si fréquemment utilisé</em><br />
@@ -725,7 +748,7 @@ Vous devrez recharger le fichier via le bouton dans la barre latérale  </p>
 <h2 id="2-utilisation-de-lapplication"><strong>2. Utilisation de l'application</strong><a class="headerlink" href="#2-utilisation-de-lapplication" title="Permanent link">&para;</a></h2>
 <h3 id="demarrer-lapplication"><strong><em>Démarrer l’application</em></strong><a class="headerlink" href="#demarrer-lapplication" title="Permanent link">&para;</a></h3>
 <hr />
-<p>Copier le chemin du dossier contenant les images dans le champ prévu et définissez la valeur du FOV de vos images.  </p>
+<p>Copier le chemin du dossier contenant les images dans le champ prévu et définissez, si besoin, la valeur du FOV de vos images.  </p>
 <table>
 <thead>
 <tr>
@@ -751,7 +774,7 @@ Vous devrez recharger le fichier via le bouton dans la barre latérale  </p>
 Si vous modifiez le contenu du dossier photo, vous devez recalculer les exifs notamment dans le cas d'un ajout.  </p>
 <p><img alt="Bouton pour recalculer les EXIF" src="../images/bouton_recalc_exif.jpg" width="300px" /></p>
 </div>
-<p><em><strong>Gestion automatique des bandes noires</strong></em></p>
+<p><em><strong>Gestion automatique des bandes noires [pour les photos standards]</strong></em></p>
 <p>Le FOV exploitable de la photo est fixé à 70°.  </p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -773,7 +796,9 @@ Si votre image a un FOV de 100° (défini dans la barre latérale), l’applicat
 - par cible<br />
 - par type_objet</p>
 </div>
-<p><strong>Cliquez sur l’image à l’endroit souhaité.</strong><br />
+<p><strong>Cliquez sur l’image à l’endroit souhaité.</strong> </p>
+<p><em>Pour les images standards :</em> effectuez un clic-gauche<br />
+<em>Pour les images à 360° :</em> clic-droit pour ajouter une annotation<br />
 <img alt="Annotation sur la photo" src="../images/interface_annot.jpg" width="500px" /> </p>
 <div class="admonition info">
 <p class="admonition-title">Info</p>
@@ -781,7 +806,7 @@ Si votre image a un FOV de 100° (défini dans la barre latérale), l’applicat
 <em>Les objets en doublons (un même objets sur deux images) sont moyennés pour ne garder qu'un seul élément lors du traitement final</em><br />
 <em>Il se peut que les doublons entre deux images soient maintenus en fonction de leur distance (tri attributaire et spatial)</em>   </p>
 </div>
-<h3 id="gerer-les-annotations"><strong><em>Gérer les annotations</em></strong><a class="headerlink" href="#gerer-les-annotations" title="Permanent link">&para;</a></h3>
+<h3 id="gestion-des-annotations"><strong><em>Gestion des annotations</em></strong><a class="headerlink" href="#gestion-des-annotations" title="Permanent link">&para;</a></h3>
 <hr />
 <p>Vous pouvez :</p>
 <ul>
@@ -790,7 +815,7 @@ Si votre image a un FOV de 100° (défini dans la barre latérale), l’applicat
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Il n’est pas possible de déplacer une annotation : supprimez-la puis recréez-la au bon endroit.  </p>
+<p>Il n’est pas possible de déplacer une annotation dynamiquement : supprimez-la puis recréez-la au bon endroit.  </p>
 </div>
 <table>
 <thead>
@@ -806,8 +831,9 @@ Si votre image a un FOV de 100° (défini dans la barre latérale), l’applicat
 </tr>
 </tbody>
 </table>
-<p>Vous pouvez également supprimer l'ensemble des annotations d'une image via le bouton dans la barre latérale<br />
-<img alt="Bouton pour supprimer les annotations" src="../images/bouton_reset_annot.jpg" width="300px" />  </p>
+<p>Vous pouvez également supprimer l'ensemble des annotations d'une image grâce au bouton sous le tableau<br />
+<img alt="Bouton pour supprimer les annotations" src="../images/bouton_reset_annot.jpg" width="300px" /><br />
+<em>Bug visuel possible donnant l'impression qu'il reste une annotation malgré la suppression totale. Si le tableau est vide alors toutes les annotations ont été supprimées.</em>  </p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>Faites une sauvegarde du json d'annotations avant chaque session<br />
@@ -817,6 +843,14 @@ Les boutons de modification et de suppression ont un effet immédiat lors du cli
 <h3 id="generez-vos-donnees-finales"><strong><em>Générez vos données finales</em></strong><a class="headerlink" href="#generez-vos-donnees-finales" title="Permanent link">&para;</a></h3>
 <hr />
 <p>Dans la barre latérale :</p>
+<ul>
+<li>définisser si besoin le décalage pour un référentiel 0° = Nord</li>
+</ul>
+<div class="admonition info">
+<p class="admonition-title">Référentiel Nord = 0°</p>
+<p>PhotoMapon utilise un référentiel standard d’azimut dans lequel 0° correspond au Nord, avec une rotation horaire (90° = Est, 180° = Sud, 270° = Ouest). Cependant, certaines caméras — notamment les appareils 360° ou certaines GoPro — enregistrent parfois les orientations dans un autre référentiel, par exemple avec 0° positionné à l’Est. Dans ce cas, l’angle d’orientation affiché dans la visionneuse ne correspond pas au référentiel attendu, ce qui fausse la direction de projection et donc la cartographie du point annoté.</p>
+<p>Pour corriger cela, PhotoMapon permet d’utiliser un compteur d’ajustement de l’angle, permettant soit de ramener l’image dans un référentiel Nord cohérent, soit d’apporter une correction manuelle plus fine lorsque l’orientation EXIF s’avère imprécise (cas fréquent sur les photos prises en mouvement ou en conditions GPS dégradées).</p>
+</div>
 <ul>
 <li>ajoutez un fichier GPKG en Lambert-93 (EPSG 2154)</li>
 <li>sélectionnez la table de comparaison (polygone)</li>
@@ -888,7 +922,7 @@ L'ensemble des tables du GPKG d'origine sont renvoyées, seule la table fournie 
 </tbody>
 </table>
 <p><em>Vous pouvez désactiver la création de certaines couches pour ne garder que "photo", la couche utilisateur mise à jour (et le reste des couches d'origine) et "point_objet" en commentant les lignes dans le fichier.</em><br />
-<em><strong>utils/geo_utils -&gt; à partir de la ligne 412</strong></em></p>
+<em><strong>utils/geo_utils -&gt; à partir de la ligne 464</strong></em></p>
 </div>
 <hr />
 

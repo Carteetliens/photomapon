@@ -18,7 +18,7 @@
         <link rel="prev" href="../utilisation/">
       
       
-        <link rel="next" href="../credits/">
+        <link rel="next" href="../maj/">
       
       
       <link rel="icon" href="../images/favicon.ico">
@@ -441,6 +441,28 @@
   
   
     <li class="md-nav__item">
+      <a href="../maj/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Mise à jour
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../credits/" class="md-nav__link">
         
   
@@ -559,10 +581,10 @@
 <h2 id="definir-le-fov-et-le-chemin-des-photos-par-defaut"><strong>Définir le FOV et le chemin des photos par défaut</strong><a class="headerlink" href="#definir-le-fov-et-le-chemin-des-photos-par-defaut" title="Permanent link">&para;</a></h2>
 <hr />
 <p>Afin de ne pas avoir à saisir le chemin du dossier de projet ainsi que le FOV de l'appareil, il est possible d'ajouter des valeurs par défaut dans le <strong><em>main.py</em></strong> :</p>
-<p><strong>Ligne 41</strong> – Chemin vers le dossier photos :
+<p><strong>Ligne 93</strong> – Chemin vers le dossier photos :
 <div class="highlight"><pre><span></span><code>image_folder = st.text_input(&quot;Copiez le chemin du dossier contenant les images&quot;, r&quot;votre\\chemin\\par\\défaut&quot;)
 </code></pre></div></p>
-<p><strong>Ligne 110</strong> – Modifier la valeur de value="" pour appliquer une valeur par défaut à chaque initialisation :
+<p><strong>Ligne 170</strong> – Modifier la valeur de value="" pour appliquer une valeur par défaut à chaque initialisation :
 <div class="highlight"><pre><span></span><code>fov_user = st.number_input(&quot;Champ de vision (FOV en degrés)&quot;, min_value=70.0, max_value=180.0, value=100.0, step=0.1, key=&quot;fov_input&quot;)
 </code></pre></div></p>
 <h2 id="utilisation-dune-base-postgres-pour-recuperer-les-resultats"><strong>Utilisation d'une base Postgres pour récupérer les résultats</strong><a class="headerlink" href="#utilisation-dune-base-postgres-pour-recuperer-les-resultats" title="Permanent link">&para;</a></h2>
